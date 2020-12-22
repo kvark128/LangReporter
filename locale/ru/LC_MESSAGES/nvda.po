@@ -1,0 +1,65 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: LangReporter\n"
+"POT-Creation-Date: 2020-12-22 06:34+0800\n"
+"PO-Revision-Date: 2020-12-22 06:34+0800\n"
+"Last-Translator: Kvark <kvark128@yandex.ru>\n"
+"Language-Team: \n"
+"Language: ru_RU\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Poedit 1.6.11\n"
+"X-Poedit-Basepath: .\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n"
+"%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"X-Poedit-SearchPath-0: ..\\..\\..\\..\\LangReporter\n"
+
+#: ..\..\..\..\LangReporter/globalPlugins/LangReporter.py:34
+msgid "Full localized name of the language"
+msgstr "Полное локализованное название языка"
+
+#: ..\..\..\..\LangReporter/globalPlugins/LangReporter.py:35
+msgid "Abbreviated name of the language"
+msgstr "Сокращённое название языка"
+
+#: ..\..\..\..\LangReporter/globalPlugins/LangReporter.py:36
+msgid "Native name of the language"
+msgstr "Родное название языка"
+
+#: ..\..\..\..\LangReporter/globalPlugins/LangReporter.py:37
+msgid "Localized name of the language"
+msgstr "Локализованное название языка"
+
+#: ..\..\..\..\LangReporter/globalPlugins/LangReporter.py:38
+msgid "Two-letter language name from ISO 639"
+msgstr "Двухбуквенное название языка из ISO 639"
+
+#: ..\..\..\..\LangReporter/globalPlugins/LangReporter.py:39
+msgid "Three-letter language name from ISO 639-2"
+msgstr "Трёхбуквенное название языка из ISO 639-2"
+
+#: ..\..\..\..\LangReporter/globalPlugins/LangReporter.py:84
+msgid "unknown language"
+msgstr "неизвестный язык"
+
+#: ..\..\..\..\LangReporter/globalPlugins/LangReporter.py:109
+msgid "unknown input method"
+msgstr "неизвестный метод ввода"
+
+#: ..\..\..\..\LangReporter/globalPlugins/LangReporter.py:116
+#, python-brace-format
+msgid "{language} - {layout}"
+msgstr "{language} - {layout}"
+
+#: ..\..\..\..\LangReporter/globalPlugins/LangReporter.py:127
+msgid "Input language and layout"
+msgstr "Язык ввода и раскладка"
+
+#: ..\..\..\..\LangReporter/globalPlugins/LangReporter.py:132
+msgid "Input language &presentation:"
+msgstr "&Представление языка ввода:"
+
+#: ..\..\..\..\LangReporter/globalPlugins/LangReporter.py:140
+msgid "Report &layout when language switching"
+msgstr "Сообщать &раскладку при переключении языка"
