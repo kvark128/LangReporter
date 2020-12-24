@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: LangReporter\n"
-"POT-Creation-Date: 2020-12-22 06:34+0800\n"
-"PO-Revision-Date: 2020-12-22 06:34+0800\n"
+"POT-Creation-Date: 2020-12-24 11:16+0800\n"
+"PO-Revision-Date: 2020-12-24 11:18+0800\n"
 "Last-Translator: Kvark <kvark128@yandex.ru>\n"
 "Language-Team: \n"
 "Language: ru_RU\n"
@@ -15,51 +15,55 @@ msgstr ""
 "%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
 "X-Poedit-SearchPath-0: ..\\..\\..\\..\\LangReporter\n"
 
-#: ..\..\..\..\LangReporter/globalPlugins/LangReporter.py:34
+#: ..\..\..\..\LangReporter/globalPlugins/LangReporter.py:36
 msgid "Full localized name of the language"
 msgstr "Полное локализованное название языка"
 
-#: ..\..\..\..\LangReporter/globalPlugins/LangReporter.py:35
+#: ..\..\..\..\LangReporter/globalPlugins/LangReporter.py:37
 msgid "Abbreviated name of the language"
 msgstr "Сокращённое название языка"
 
-#: ..\..\..\..\LangReporter/globalPlugins/LangReporter.py:36
+#: ..\..\..\..\LangReporter/globalPlugins/LangReporter.py:38
 msgid "Native name of the language"
 msgstr "Родное название языка"
 
-#: ..\..\..\..\LangReporter/globalPlugins/LangReporter.py:37
+#: ..\..\..\..\LangReporter/globalPlugins/LangReporter.py:39
 msgid "Localized name of the language"
 msgstr "Локализованное название языка"
 
-#: ..\..\..\..\LangReporter/globalPlugins/LangReporter.py:38
+#: ..\..\..\..\LangReporter/globalPlugins/LangReporter.py:40
 msgid "Two-letter language name from ISO 639"
 msgstr "Двухбуквенное название языка из ISO 639"
 
-#: ..\..\..\..\LangReporter/globalPlugins/LangReporter.py:39
+#: ..\..\..\..\LangReporter/globalPlugins/LangReporter.py:41
 msgid "Three-letter language name from ISO 639-2"
 msgstr "Трёхбуквенное название языка из ISO 639-2"
 
-#: ..\..\..\..\LangReporter/globalPlugins/LangReporter.py:84
+#: ..\..\..\..\LangReporter/globalPlugins/LangReporter.py:86
 msgid "unknown language"
 msgstr "неизвестный язык"
 
-#: ..\..\..\..\LangReporter/globalPlugins/LangReporter.py:109
+#: ..\..\..\..\LangReporter/globalPlugins/LangReporter.py:111
 msgid "unknown input method"
 msgstr "неизвестный метод ввода"
 
-#: ..\..\..\..\LangReporter/globalPlugins/LangReporter.py:116
+#: ..\..\..\..\LangReporter/globalPlugins/LangReporter.py:118
 #, python-brace-format
 msgid "{language} - {layout}"
 msgstr "{language} - {layout}"
 
-#: ..\..\..\..\LangReporter/globalPlugins/LangReporter.py:127
+#: ..\..\..\..\LangReporter/globalPlugins/LangReporter.py:140
 msgid "Input language and layout"
 msgstr "Язык ввода и раскладка"
 
-#: ..\..\..\..\LangReporter/globalPlugins/LangReporter.py:132
+#: ..\..\..\..\LangReporter/globalPlugins/LangReporter.py:145
 msgid "Input language &presentation:"
 msgstr "&Представление языка ввода:"
 
-#: ..\..\..\..\LangReporter/globalPlugins/LangReporter.py:140
+#: ..\..\..\..\LangReporter/globalPlugins/LangReporter.py:153
 msgid "Report &layout when language switching"
 msgstr "Сообщать &раскладку при переключении языка"
+
+#: ..\..\..\..\LangReporter/globalPlugins/LangReporter.py:156
+msgid "Report language &switching bar"
+msgstr "Сообщать панель &переключения языка"
