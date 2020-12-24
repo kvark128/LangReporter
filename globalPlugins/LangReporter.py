@@ -3,6 +3,7 @@
 
 import globalPluginHandler
 import api
+import speech
 import config
 import sayAllHandler
 import winUser
@@ -11,6 +12,7 @@ import NVDAObjects.window
 import ui
 import queueHandler
 import NVDAHelper
+from NVDAObjects.UIA import UIA
 from logHandler import log
 from gui import SettingsPanel, NVDASettingsDialog, guiHelper
 
@@ -123,6 +125,17 @@ def _nvdaControllerInternal_inputLangChangeNotify(threadID, hkl, layoutString):
 	queueHandler.queueFunction(queueHandler.eventQueue, ui.message, msg)
 	return 0
 
+class Layout(UIA):
+
+	def _get_shouldAllowUIAFocusEvent(self):
+		return False
+
+	def event_UIA_elementSelected(self):
+		name = self.name
+		if config.conf["LangReporter"]["reportLanguageSwitchingBar"] and name:
+			speech.cancelSpeech()
+			ui.message(name)
+
 class AddonSettingsPanel(SettingsPanel):
 	title = _("Input language and layout")
 
@@ -140,12 +153,16 @@ class AddonSettingsPanel(SettingsPanel):
 		self.reportLayoutCheckBox = sHelper.addItem(wx.CheckBox(self, label=_("Report &layout when language switching")))
 		self.reportLayoutCheckBox.SetValue(config.conf["LangReporter"]["reportLayout"])
 
+		self.reportLanguageSwitchingBarCheckBox = sHelper.addItem(wx.CheckBox(self, label=_("Report language &switching bar")))
+		self.reportLanguageSwitchingBarCheckBox.SetValue(config.conf["LangReporter"]["reportLanguageSwitchingBar"])
+
 	def postInit(self):
 		self.languagePresentationChoice.SetFocus()
 
 	def onSave(self):
 		config.conf["LangReporter"]["languagePresentation"] = LOCAL_CONSTANTS_DESCRIPTIONS[self.languagePresentationChoice.GetSelection()][0]
 		config.conf["LangReporter"]["reportLayout"] = self.reportLayoutCheckBox.GetValue()
+		config.conf["LangReporter"]["reportLanguageSwitchingBar"] = self.reportLanguageSwitchingBarCheckBox.GetValue()
 
 class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 
@@ -154,9 +171,15 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		config.conf.spec["LangReporter"] = {
 			"languagePresentation": f"integer(default={LOCALE_SLANGUAGE})",
 			"reportLayout": "boolean(default=True)",
+			"reportLanguageSwitchingBar": "boolean(default=True)",
 		}
 		NVDASettingsDialog.categoryClasses.append(AddonSettingsPanel)
 		_setDllFuncPointer(NVDAHelper.localLib, "_nvdaControllerInternal_inputLangChangeNotify", _nvdaControllerInternal_inputLangChangeNotify)
+
+	def chooseNVDAObjectOverlayClasses(self, obj, clsList):
+		if isinstance(obj, UIA) and obj.windowClassName == "DirectUIHWND":
+			if "InputSwitch" in obj.UIAElement.cachedProviderDescription:
+				clsList.insert(0, Layout)
 
 	def terminate(self):
 		_setDllFuncPointer(NVDAHelper.localLib, "_nvdaControllerInternal_inputLangChangeNotify", NVDAHelper.nvdaControllerInternal_inputLangChangeNotify)
