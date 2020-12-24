@@ -125,7 +125,7 @@ def _nvdaControllerInternal_inputLangChangeNotify(threadID, hkl, layoutString):
 	queueHandler.queueFunction(queueHandler.eventQueue, ui.message, msg)
 	return 0
 
-class Layout(UIA):
+class InputSwitch(UIA):
 
 	def _get_shouldAllowUIAFocusEvent(self):
 		return False
@@ -177,9 +177,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		_setDllFuncPointer(NVDAHelper.localLib, "_nvdaControllerInternal_inputLangChangeNotify", _nvdaControllerInternal_inputLangChangeNotify)
 
 	def chooseNVDAObjectOverlayClasses(self, obj, clsList):
-		if isinstance(obj, UIA) and obj.windowClassName == "DirectUIHWND":
-			if "InputSwitch" in obj.UIAElement.cachedProviderDescription:
-				clsList.insert(0, Layout)
+		if isinstance(obj, UIA) and "InputSwitch.dll" in obj.UIAElement.cachedProviderDescription:
+			clsList.insert(0, InputSwitch)
 
 	def terminate(self):
 		_setDllFuncPointer(NVDAHelper.localLib, "_nvdaControllerInternal_inputLangChangeNotify", NVDAHelper.nvdaControllerInternal_inputLangChangeNotify)
