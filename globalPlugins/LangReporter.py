@@ -1,11 +1,11 @@
-# Copyright (C) 2020  Alexander Linkov <kvark128@yandex.ru>
+# Copyright (C) 2020, 2021 Alexander Linkov <kvark128@yandex.ru>
 # Most of the code is taken from the NVDAHelper module and belongs to its authors
 
 import globalPluginHandler
 import api
 import speech
 import config
-import sayAllHandler
+from speech import sayAll
 import winUser
 import addonHandler
 import NVDAObjects.window
@@ -78,7 +78,7 @@ def _nvdaControllerInternal_inputLangChangeNotify(threadID, hkl, layoutString):
 	if not isinstance(focus, NVDAObjects.window.Window) or (threadID != focus.windowThreadID and focus.windowClassName != "ConsoleWindowClass"):
 		return 0
 	# Never announce changes while in sayAll (#1676)
-	if sayAllHandler.isRunning():
+	if sayAll.SayAllHandler.isRunning():
 		return 0
 	buf = create_unicode_buffer(1024)
 	res = windll.kernel32.GetLocaleInfoW(languageID, config.conf["LangReporter"]["languagePresentation"], buf, 1024)
