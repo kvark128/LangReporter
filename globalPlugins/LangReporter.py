@@ -1,4 +1,4 @@
-# Copyright (C) 2020, 2021 Alexander Linkov <kvark128@yandex.ru>
+# Copyright (C) 2020 - 2022 Alexander Linkov <kvark128@yandex.ru>
 # Most of the code is taken from the NVDAHelper module and belongs to its authors
 
 import globalPluginHandler
@@ -16,6 +16,7 @@ from NVDAObjects.UIA import UIA
 from logHandler import log
 from gui import SettingsPanel, NVDASettingsDialog, guiHelper
 
+import threading
 import wx
 import winreg
 from ctypes import *
@@ -60,8 +61,12 @@ def _lookupKeyboardLayoutNameWithHexString(layoutString):
 		finally:
 			windll.advapi32.RegCloseKey(key)
 
+_focusLock = threading.Lock()
+_lastFocusWhenLanguageSwitching = None
+
 @WINFUNCTYPE(c_long,c_long,c_ulong,c_wchar_p)
 def _nvdaControllerInternal_inputLangChangeNotify(threadID, hkl, layoutString):
+	global _lastFocusWhenLanguageSwitching
 	lastLanguageID = NVDAHelper.lastLanguageID
 	lastLayoutString = NVDAHelper.lastLayoutString
 	languageID = winUser.LOWORD(hkl)
@@ -77,6 +82,8 @@ def _nvdaControllerInternal_inputLangChangeNotify(threadID, hkl, layoutString):
 	# But threadIDs for console windows are always wrong so don't ignore for those.
 	if not isinstance(focus, NVDAObjects.window.Window) or (threadID != focus.windowThreadID and focus.windowClassName != "ConsoleWindowClass"):
 		return 0
+	with _focusLock:
+		_lastFocusWhenLanguageSwitching = focus
 	# Never announce changes while in sayAll (#1676)
 	if sayAll.SayAllHandler.isRunning():
 		return 0
@@ -132,7 +139,7 @@ class InputSwitch(UIA):
 
 	def event_UIA_elementSelected(self):
 		name = self.name
-		if config.conf["LangReporter"]["reportLanguageSwitchingBar"] and name:
+		if name and config.conf["LangReporter"]["reportLanguageSwitchingBar"]:
 			speech.cancelSpeech()
 			ui.message(name)
 
@@ -183,3 +190,14 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 	def terminate(self):
 		_setDllFuncPointer(NVDAHelper.localLib, "_nvdaControllerInternal_inputLangChangeNotify", NVDAHelper.nvdaControllerInternal_inputLangChangeNotify)
 		NVDASettingsDialog.categoryClasses.remove(AddonSettingsPanel)
+
+	def event_gainFocus(self, obj, nextHandler):
+		# In new versions of Windows 10, switching the input language causes NVDA to create a fake focus event
+		# We need to prevent such an event from being handled
+		global _lastFocusWhenLanguageSwitching
+		with _focusLock:
+			lastFocus = _lastFocusWhenLanguageSwitching
+			_lastFocusWhenLanguageSwitching = None
+			if obj == lastFocus:
+				return
+		nextHandler()
