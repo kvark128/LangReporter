@@ -178,7 +178,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		config.conf.spec["LangReporter"] = {
 			"languagePresentation": f"integer(default={LOCALE_SLANGUAGE})",
 			"reportLayout": "boolean(default=True)",
-			"reportLanguageSwitchingBar": "boolean(default=True)",
+			"reportLanguageSwitchingBar": "boolean(default=False)",
 		}
 		NVDASettingsDialog.categoryClasses.append(AddonSettingsPanel)
 		_setDllFuncPointer(NVDAHelper.localLib, "_nvdaControllerInternal_inputLangChangeNotify", _nvdaControllerInternal_inputLangChangeNotify)
@@ -191,9 +191,16 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		_setDllFuncPointer(NVDAHelper.localLib, "_nvdaControllerInternal_inputLangChangeNotify", NVDAHelper.nvdaControllerInternal_inputLangChangeNotify)
 		NVDASettingsDialog.categoryClasses.remove(AddonSettingsPanel)
 
+	def event_foreground(self, obj, nextHandler):
+		# Different windows may have different input languages
+		# We need to reset last language information when switching between windows
+		NVDAHelper.lastLanguageID = None
+		NVDAHelper.lastLayoutString = None
+		nextHandler()
+
 	def event_gainFocus(self, obj, nextHandler):
-		# In new versions of Windows 10, switching the input language causes NVDA to create a fake focus event
-		# We need to prevent such an event from being handled
+		# Starting with Windows 10 version 1903, switching the input language causes NVDA to create a fake focus event
+		# We need to prevent the handling of such an event once
 		global _lastFocusWhenLanguageSwitching
 		with _focusLock:
 			lastFocus = _lastFocusWhenLanguageSwitching
