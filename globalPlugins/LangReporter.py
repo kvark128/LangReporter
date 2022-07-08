@@ -61,36 +61,7 @@ def _lookupKeyboardLayoutNameWithHexString(layoutString):
 		finally:
 			windll.advapi32.RegCloseKey(key)
 
-_focusLock = threading.Lock()
-_lastFocusWhenLanguageSwitching = None
-
-@WINFUNCTYPE(c_long,c_long,c_ulong,c_wchar_p)
-def _nvdaControllerInternal_inputLangChangeNotify(threadID, hkl, layoutString):
-	global _lastFocusWhenLanguageSwitching
-	lastLanguageID = NVDAHelper.lastLanguageID
-	lastLayoutString = NVDAHelper.lastLayoutString
-	languageID = winUser.LOWORD(hkl)
-	# Simple case where there is no change
-	if languageID == lastLanguageID and layoutString == lastLayoutString:
-		return 0
-	focus = api.getFocusObject()
-	# This callback can be called before NVDa is fully initialized
-	# So also handle focus object being None as well as checking for sleepMode
-	if not focus or focus.sleepMode:
-		return 0
-	# Generally we should not allow input lang changes from threads that are not focused.
-	# But threadIDs for console windows are always wrong so don't ignore for those.
-	if not isinstance(focus, NVDAObjects.window.Window) or (threadID != focus.windowThreadID and focus.windowClassName != "ConsoleWindowClass"):
-		return 0
-	with _focusLock:
-		_lastFocusWhenLanguageSwitching = focus
-	# Never announce changes while in sayAll (#1676)
-	if sayAll.SayAllHandler.isRunning():
-		return 0
-	buf = create_unicode_buffer(1024)
-	res = windll.kernel32.GetLocaleInfoW(languageID, config.conf["LangReporter"]["languagePresentation"], buf, 1024)
-	# Translators: the label for an unknown language when switching input methods.
-	inputLanguageName = buf.value if res else _("unknown language")
+def _lookupKeyboardLayoutName(layoutString, hkl):
 	layoutStringCodes = []
 	inputMethodName = None
 	# LayoutString can either be a real input method name, a hex string for an input method name in the registry, or an empty string.
@@ -119,16 +90,58 @@ def _nvdaControllerInternal_inputLangChangeNotify(threadID, hkl, layoutString):
 	# Remove the language name if it is in the input method name.
 	if ' - ' in inputMethodName:
 		inputMethodName = "".join(inputMethodName.split(' - ')[1:])
+	return inputMethodName
+
+_inputSwitchingBarWillBeAnnounced = threading.Event()
+_inputSwitchingLock = threading.Lock()
+_lastFocusWhenLanguageSwitching = None
+_lastLanguageID = None
+_lastLayoutString = None
+
+@WINFUNCTYPE(c_long,c_long,c_ulong,c_wchar_p)
+def _nvdaControllerInternal_inputLangChangeNotify(threadID, hkl, layoutString):
+	global _lastFocusWhenLanguageSwitching, _lastLanguageID, _lastLayoutString
+	languageID = winUser.LOWORD(hkl)
+	languageSwitching = True
+	with _inputSwitchingLock:
+		if languageID == _lastLanguageID:
+			languageSwitching = False
+			if layoutString == _lastLayoutString:
+				# Simple case where there is no change
+				return 0
+	focus = api.getFocusObject()
+	# This callback can be called before NVDa is fully initialized
+	# So also handle focus object being None as well as checking for sleepMode
+	if not focus or focus.sleepMode:
+		return 0
+	# Generally we should not allow input lang changes from threads that are not focused.
+	# But threadIDs for console windows are always wrong so don't ignore for those.
+	if not isinstance(focus, NVDAObjects.window.Window) or (threadID != focus.windowThreadID and focus.windowClassName != "ConsoleWindowClass"):
+		return 0
+	with _inputSwitchingLock:
+		_lastFocusWhenLanguageSwitching = focus
+		_lastLanguageID = languageID
+		_lastLayoutString = layoutString
+	# Never announce changes while in sayAll (#1676)
+	if sayAll.SayAllHandler.isRunning():
+		return 0
+	# Never announce changes if it has already been done in the language switching bar
+	if _inputSwitchingBarWillBeAnnounced.isSet():
+		_inputSwitchingBarWillBeAnnounced.clear()
+		return 0
+	buf = create_unicode_buffer(1024)
+	res = windll.kernel32.GetLocaleInfoW(languageID, config.conf["LangReporter"]["languagePresentation"], buf, 1024)
+	# Translators: the label for an unknown language when switching input methods.
+	inputLanguageName = buf.value if res else _("unknown language")
+	inputMethodName = _lookupKeyboardLayoutName(layoutString, hkl)
 	# Include the language only if it changed.
-	if languageID != lastLanguageID:
+	if languageSwitching:
 		if config.conf["LangReporter"]["reportLayout"]:
 			msg = _("{language} - {layout}").format(language=inputLanguageName, layout=inputMethodName)
 		else:
 			msg = inputLanguageName
 	else:
 		msg = inputMethodName
-	NVDAHelper.lastLanguageID = languageID
-	NVDAHelper.lastLayoutString = layoutString
 	queueHandler.queueFunction(queueHandler.eventQueue, ui.message, msg)
 	return 0
 
@@ -138,10 +151,14 @@ class InputSwitch(UIA):
 		return False
 
 	def event_UIA_elementSelected(self):
-		name = self.name
-		if name and config.conf["LangReporter"]["reportLanguageSwitchingBar"]:
-			speech.cancelSpeech()
-			ui.message(name)
+		inputMethodName = self.name
+		lWinIsPressed = bool(winUser.getAsyncKeyState(winUser.VK_LWIN) & 0x8000)
+		rWinIsPressed = bool(winUser.getAsyncKeyState(winUser.VK_RWIN) & 0x8000)
+		if inputMethodName and (lWinIsPressed or rWinIsPressed):
+			if config.conf["LangReporter"]["reportLanguageSwitchingBar"]:
+				_inputSwitchingBarWillBeAnnounced.set()
+				speech.cancelSpeech()
+				ui.message(inputMethodName)
 
 class AddonSettingsPanel(SettingsPanel):
 	title = _("Input language and layout")
@@ -178,7 +195,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		config.conf.spec["LangReporter"] = {
 			"languagePresentation": f"integer(default={LOCALE_SLANGUAGE})",
 			"reportLayout": "boolean(default=True)",
-			"reportLanguageSwitchingBar": "boolean(default=False)",
+			"reportLanguageSwitchingBar": "boolean(default=True)",
 		}
 		NVDASettingsDialog.categoryClasses.append(AddonSettingsPanel)
 		_setDllFuncPointer(NVDAHelper.localLib, "_nvdaControllerInternal_inputLangChangeNotify", _nvdaControllerInternal_inputLangChangeNotify)
@@ -193,16 +210,19 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 
 	def event_foreground(self, obj, nextHandler):
 		# Different windows may have different input languages
-		# We need to reset last language information when switching between windows
-		NVDAHelper.lastLanguageID = None
-		NVDAHelper.lastLayoutString = None
+		# We need to update last language information when switching between windows
+		global _lastLanguageID, _lastLayoutString
+		with _inputSwitchingLock:
+			hkl = c_ulong(windll.User32.GetKeyboardLayout(obj.windowThreadID)).value
+			_lastLanguageID = winUser.LOWORD(hkl)
+			_lastLayoutString = None
 		nextHandler()
 
 	def event_gainFocus(self, obj, nextHandler):
 		# Starting with Windows 10 version 1903, switching the input language causes NVDA to create a fake focus event
 		# We need to prevent the handling of such an event once
 		global _lastFocusWhenLanguageSwitching
-		with _focusLock:
+		with _inputSwitchingLock:
 			lastFocus = _lastFocusWhenLanguageSwitching
 			_lastFocusWhenLanguageSwitching = None
 			if obj == lastFocus:
