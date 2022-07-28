@@ -95,20 +95,19 @@ def _lookupKeyboardLayoutName(layoutString, hkl):
 _inputSwitchingBarWillBeAnnounced = threading.Event()
 _inputSwitchingLock = threading.Lock()
 _lastFocusWhenLanguageSwitching = None
-_lastLanguageID = None
-_lastLayoutString = None
+_last_hkl = None
 
 @WINFUNCTYPE(c_long,c_long,c_ulong,c_wchar_p)
 def _nvdaControllerInternal_inputLangChangeNotify(threadID, hkl, layoutString):
-	global _lastFocusWhenLanguageSwitching, _lastLanguageID, _lastLayoutString
+	global _lastFocusWhenLanguageSwitching, _last_hkl
 	languageID = winUser.LOWORD(hkl)
 	languageSwitching = True
 	with _inputSwitchingLock:
-		if languageID == _lastLanguageID:
+		if hkl == _last_hkl:
+			# Simple case where there is no change
+			return 0
+		if languageID == winUser.LOWORD(_last_hkl):
 			languageSwitching = False
-			if layoutString == _lastLayoutString:
-				# Simple case where there is no change
-				return 0
 	focus = api.getFocusObject()
 	# This callback can be called before NVDa is fully initialized
 	# So also handle focus object being None as well as checking for sleepMode
@@ -120,8 +119,7 @@ def _nvdaControllerInternal_inputLangChangeNotify(threadID, hkl, layoutString):
 		return 0
 	with _inputSwitchingLock:
 		_lastFocusWhenLanguageSwitching = focus
-		_lastLanguageID = languageID
-		_lastLayoutString = layoutString
+		_last_hkl = hkl
 	# Never announce changes while in sayAll (#1676)
 	if sayAll.SayAllHandler.isRunning():
 		return 0
@@ -155,6 +153,7 @@ class InputSwitch(UIA):
 		lWinIsPressed = bool(winUser.getAsyncKeyState(winUser.VK_LWIN) & 0x8000)
 		rWinIsPressed = bool(winUser.getAsyncKeyState(winUser.VK_RWIN) & 0x8000)
 		if inputMethodName and (lWinIsPressed or rWinIsPressed):
+			# User switches layout with windows+space
 			if config.conf["LangReporter"]["reportLanguageSwitchingBar"]:
 				_inputSwitchingBarWillBeAnnounced.set()
 				speech.cancelSpeech()
@@ -211,11 +210,9 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 	def event_foreground(self, obj, nextHandler):
 		# Different windows may have different input languages
 		# We need to update last language information when switching between windows
-		global _lastLanguageID, _lastLayoutString
+		global _last_hkl
 		with _inputSwitchingLock:
-			hkl = c_ulong(windll.User32.GetKeyboardLayout(obj.windowThreadID)).value
-			_lastLanguageID = winUser.LOWORD(hkl)
-			_lastLayoutString = None
+			_last_hkl = c_ulong(windll.User32.GetKeyboardLayout(obj.windowThreadID)).value
 		nextHandler()
 
 	def event_gainFocus(self, obj, nextHandler):
