@@ -1,26 +1,30 @@
 # Copyright (C) 2020 - 2022 Alexander Linkov <kvark128@yandex.ru>
 # Most of the code is taken from the NVDAHelper module and belongs to its authors
 
-import globalPluginHandler
-import api
-import speech
-import config
-from speech import sayAll
-import winUser
-import addonHandler
-import NVDAObjects.window
-import ui
-import queueHandler
-import NVDAHelper
-from NVDAObjects.UIA import UIA
-from logHandler import log
-from gui import SettingsPanel, NVDASettingsDialog, guiHelper
-
 import threading
 import wx
 import winreg
 from ctypes import *
 from ctypes.wintypes import HKEY
+
+import globalPluginHandler
+import api
+import globalCommands
+import gui
+import speech
+import config
+import globalVars
+import winUser
+import addonHandler
+import ui
+import queueHandler
+import NVDAHelper
+from speech import sayAll
+from scriptHandler import script
+from NVDAObjects.UIA import UIA
+from NVDAObjects.window import Window
+from logHandler import log
+from gui import SettingsPanel, NVDASettingsDialog, guiHelper
 
 addonHandler.initTranslation()
 
@@ -115,7 +119,7 @@ def _nvdaControllerInternal_inputLangChangeNotify(threadID, hkl, layoutString):
 		return 0
 	# Generally we should not allow input lang changes from threads that are not focused.
 	# But threadIDs for console windows are always wrong so don't ignore for those.
-	if not isinstance(focus, NVDAObjects.window.Window) or (threadID != focus.windowThreadID and focus.windowClassName != "ConsoleWindowClass"):
+	if not isinstance(focus, Window) or (threadID != focus.windowThreadID and focus.windowClassName != "ConsoleWindowClass"):
 		return 0
 	with _inputSwitchingLock:
 		_lastFocusWhenLanguageSwitching = focus
@@ -225,3 +229,11 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			if obj == lastFocus:
 				return
 		nextHandler()
+
+	@script(
+		description=_("Shows input language and layout presentation settings"),
+		category=globalCommands.SCRCAT_CONFIG,
+	)
+	def script_activateInputLanguagePresentationDialog(self, gesture):
+		if not globalVars.appArgs.secure:
+			gui.mainFrame._popupSettingsDialog(NVDASettingsDialog, AddonSettingsPanel)
