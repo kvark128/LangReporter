@@ -176,7 +176,7 @@ class AddonSettingsPanel(SettingsPanel):
 		self.reportLayoutCheckBox = sHelper.addItem(wx.CheckBox(self, label=_("Report &layout when language switching")))
 		self.reportLayoutCheckBox.SetValue(config.conf["LangReporter"]["reportLayout"])
 
-		self.reportLanguageSwitchingBarCheckBox = sHelper.addItem(wx.CheckBox(self, label=_("Report language &switching bar")))
+		self.reportLanguageSwitchingBarCheckBox = sHelper.addItem(wx.CheckBox(self, label=_("Report language &switching bar when pressing Windows+Space")))
 		self.reportLanguageSwitchingBarCheckBox.SetValue(config.conf["LangReporter"]["reportLanguageSwitchingBar"])
 
 	def postInit(self):
