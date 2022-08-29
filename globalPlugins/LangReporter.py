@@ -99,7 +99,7 @@ def _lookupKeyboardLayoutName(layoutString, hkl):
 _inputSwitchingBarWillBeAnnounced = threading.Event()
 _inputSwitchingLock = threading.Lock()
 _lastFocusWhenLanguageSwitching = None
-_last_hkl = None
+_last_hkl = 0
 
 @WINFUNCTYPE(c_long,c_long,c_ulong,c_wchar_p)
 def _nvdaControllerInternal_inputLangChangeNotify(threadID, hkl, layoutString):
