@@ -28,6 +28,9 @@ from gui import SettingsPanel, NVDASettingsDialog, guiHelper
 
 addonHandler.initTranslation()
 
+WM_INPUTLANGCHANGEREQUEST = 0x0050
+INPUTLANGCHANGE_FORWARD = 0x0002
+
 # Local information constants for obtaining of input language
 # https://docs.microsoft.com/en-us/windows/win32/intl/locale-information-constants
 LOCALE_SLANGUAGE = 0x00000002
@@ -192,6 +195,31 @@ class AddonSettingsPanel(SettingsPanel):
 		config.conf["LangReporter"]["reportLanguageSwitchingBar"] = self.reportLanguageSwitchingBarCheckBox.GetValue()
 
 class GlobalPlugin(globalPluginHandler.GlobalPlugin):
+
+	def __new__(cls, *args, **kwargs):
+		size = windll.user32.GetKeyboardLayoutList(0, None)
+		if size > 0:
+			HKLList = (wintypes.HKL * size)()
+			windll.user32.GetKeyboardLayoutList(size, HKLList)
+			for hkl in HKLList:
+				cls.addScriptForHKL(hkl)
+		return super().__new__(cls, *args, **kwargs)
+
+	@classmethod
+	def addScriptForHKL(cls, hkl):
+		script = lambda self, gesture: self._switchToLayout(hkl)
+		funcName = script.__name__ = f"script_switchLayoutTo_{hkl:08x}"
+		script.category = _("Keyboard layouts")
+		buf = create_unicode_buffer(1024)
+		res = windll.kernel32.GetLocaleInfoW(winUser.LOWORD(hkl), LOCALE_SLANGUAGE, buf, 1024)
+		inputLanguageName = buf.value if res else _("unknown language")
+		inputMethodName = _lookupKeyboardLayoutName("", hkl)
+		script.__doc__ = _("Switches to {language} - {layout} layout").format(language=inputLanguageName, layout=inputMethodName)
+		setattr(cls, funcName, script)
+
+	def _switchToLayout(self, hkl):
+		focus = api.getFocusObject()
+		winUser.sendMessage(focus.windowHandle, WM_INPUTLANGCHANGEREQUEST, INPUTLANGCHANGE_FORWARD, hkl)
 
 	def __init__(self):
 		super().__init__()
