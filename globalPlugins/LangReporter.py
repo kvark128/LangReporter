@@ -55,11 +55,11 @@ def _setDllFuncPointer(dll, name, cfunc):
 	cast(getattr(dll,name),POINTER(c_void_p)).contents.value=cast(cfunc,c_void_p).value
 
 # Function for extracting a description of the keyboard layout from the registry by its hex code
-def _lookupKeyboardLayoutNameWithHexString(layoutString):
+def getKeyboardLayoutDisplayName(klid):
 	buf=create_unicode_buffer(1024)
 	bufSize=c_int(2048)
 	key=HKEY()
-	if windll.advapi32.RegOpenKeyExW(winreg.HKEY_LOCAL_MACHINE,u"SYSTEM\\CurrentControlSet\\Control\\Keyboard Layouts\\"+ layoutString,0,winreg.KEY_QUERY_VALUE,byref(key))==0:
+	if windll.advapi32.RegOpenKeyExW(winreg.HKEY_LOCAL_MACHINE, rf"SYSTEM\CurrentControlSet\Control\Keyboard Layouts\{klid}", 0,winreg.KEY_QUERY_VALUE,byref(key))==0:
 		try:
 			if windll.advapi32.RegQueryValueExW(key,u"Layout Display Name",0,None,buf,byref(bufSize))==0:
 				windll.shlwapi.SHLoadIndirectString(buf.value,buf,1023,None)
@@ -85,22 +85,21 @@ def getKLIDFromHKL(hkl):
 			klid = winreg.EnumKey(key, i)
 		except OSError:
 			return None
-		klid_key = winreg.OpenKey(key, klid)
-		for j in itertools.count():
-			try:
-				name, data, data_type = winreg.EnumValue(klid_key, j)
-			except OSError:
-				break
-			if name == "Layout Id" and int(data, 16) == layoutID:
+		try:
+			klid_key = winreg.OpenKey(key, klid)
+			data, data_type = winreg.QueryValueEx(klid_key, "Layout Id")
+			if data_type == winreg.REG_SZ and int(data, 16) == layoutID:
 				return klid
+		except (FileNotFoundError, ValueError, TypeError):
+			pass
 
 def _lookupKeyboardLayoutName(hkl):
-	layoutString = getKLIDFromHKL(hkl)
-	if layoutString is None:
+	klid = getKLIDFromHKL(hkl)
+	if klid is None:
 		log.debugWarning("Could not find layout name for keyboard layout, reporting as unknown") 
 		# Translators: The label for an unknown input method when switching input methods. 
 		return _("unknown input method")
-	inputMethodName = _lookupKeyboardLayoutNameWithHexString(layoutString)
+	inputMethodName = getKeyboardLayoutDisplayName(klid)
 	# Remove the language name if it is in the input method name.
 	if ' - ' in inputMethodName:
 		inputMethodName = "".join(inputMethodName.split(' - ')[1:])
