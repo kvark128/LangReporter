@@ -2,6 +2,7 @@
 # Most of the code is taken from the NVDAHelper module and belongs to its authors
 
 import threading
+import itertools
 import wx
 import winreg
 from ctypes import *
@@ -68,32 +69,38 @@ def _lookupKeyboardLayoutNameWithHexString(layoutString):
 		finally:
 			windll.advapi32.RegCloseKey(key)
 
-def _lookupKeyboardLayoutName(layoutString, hkl):
-	layoutStringCodes = []
-	inputMethodName = None
-	# LayoutString can either be a real input method name, a hex string for an input method name in the registry, or an empty string.
-	# If it is a real input method name, then it is used as is.
-	# If it is a hex string or it is empty, then the method name is looked up by trying:
-	# The full hex string, the hkl as a hex string, the low word of the hex string or hkl, the high word of the hex string or hkl.
-	if layoutString:
+def getKLIDFromHKL(hkl):
+	deviceID = winUser.HIWORD(hkl)
+	if deviceID & 0xf000 != 0xf000: # deviceID not contains layoutID
+		langID = winUser.LOWORD(hkl)
+		if deviceID != 0:
+			# deviceID overrides langID if set
+			langID = deviceID
+		return f"{langID:08x}"
+
+	key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SYSTEM\CurrentControlSet\Control\Keyboard Layouts")
+	layoutID = deviceID & 0x0fff
+	for i in itertools.count():
 		try:
-			int(layoutString, 16)
-			layoutStringCodes.append(layoutString)
-		except ValueError:
-			inputMethodName = layoutString
-	if not inputMethodName:
-		layoutStringCodes.insert(0,hex(hkl)[2:].rstrip('L').upper().rjust(8,'0'))
-		for stringCode in list(layoutStringCodes):
-			layoutStringCodes.append(stringCode[4:].rjust(8,'0'))
-			if stringCode[0]<'D':
-				layoutStringCodes.append(stringCode[0:4].rjust(8,'0'))
-		for stringCode in layoutStringCodes:
-			inputMethodName = _lookupKeyboardLayoutNameWithHexString(stringCode)
-			if inputMethodName: break
-	if not inputMethodName:
+			klid = winreg.EnumKey(key, i)
+		except OSError:
+			return None
+		klid_key = winreg.OpenKey(key, klid)
+		for j in itertools.count():
+			try:
+				name, data, data_type = winreg.EnumValue(klid_key, j)
+			except OSError:
+				break
+			if name == "Layout Id" and int(data, 16) == layoutID:
+				return klid
+
+def _lookupKeyboardLayoutName(hkl):
+	layoutString = getKLIDFromHKL(hkl)
+	if layoutString is None:
 		log.debugWarning("Could not find layout name for keyboard layout, reporting as unknown") 
 		# Translators: The label for an unknown input method when switching input methods. 
-		inputMethodName = _("unknown input method")
+		return _("unknown input method")
+	inputMethodName = _lookupKeyboardLayoutNameWithHexString(layoutString)
 	# Remove the language name if it is in the input method name.
 	if ' - ' in inputMethodName:
 		inputMethodName = "".join(inputMethodName.split(' - ')[1:])
@@ -138,7 +145,7 @@ def _nvdaControllerInternal_inputLangChangeNotify(threadID, hkl, layoutString):
 	res = windll.kernel32.GetLocaleInfoW(languageID, config.conf["LangReporter"]["languagePresentation"], buf, 1024)
 	# Translators: the label for an unknown language when switching input methods.
 	inputLanguageName = buf.value if res else _("unknown language")
-	inputMethodName = _lookupKeyboardLayoutName(layoutString, hkl)
+	inputMethodName = _lookupKeyboardLayoutName(hkl)
 	# Include the language only if it changed.
 	if languageSwitching:
 		if config.conf["LangReporter"]["reportLayout"]:
@@ -213,7 +220,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		buf = create_unicode_buffer(1024)
 		res = windll.kernel32.GetLocaleInfoW(winUser.LOWORD(hkl), LOCALE_SLANGUAGE, buf, 1024)
 		inputLanguageName = buf.value if res else _("unknown language")
-		inputMethodName = _lookupKeyboardLayoutName("", hkl)
+		inputMethodName = _lookupKeyboardLayoutName(hkl)
 		script.__doc__ = _("Switches to {language} - {layout} layout").format(language=inputLanguageName, layout=inputMethodName)
 		setattr(cls, funcName, script)
 
