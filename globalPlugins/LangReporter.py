@@ -3,10 +3,10 @@
 
 import threading
 import itertools
+import functools
 import wx
 import winreg
 from ctypes import *
-from ctypes.wintypes import HKEY
 
 import globalPluginHandler
 import api
@@ -54,11 +54,11 @@ LOCAL_CONSTANTS_DESCRIPTIONS = [
 def _setDllFuncPointer(dll, name, cfunc):
 	cast(getattr(dll,name),POINTER(c_void_p)).contents.value=cast(cfunc,c_void_p).value
 
-# Function for extracting a description of the keyboard layout from the registry by its hex code
+# Function for extracting a description of the keyboard layout from the registry by its klid
 def getKeyboardLayoutDisplayName(klid):
-	buf=create_unicode_buffer(1024)
-	bufSize=c_int(2048)
-	key=HKEY()
+	buf = create_unicode_buffer(1024)
+	bufSize = c_int(2048)
+	key = wintypes.HKEY()
 	if windll.advapi32.RegOpenKeyExW(winreg.HKEY_LOCAL_MACHINE, rf"SYSTEM\CurrentControlSet\Control\Keyboard Layouts\{klid}", 0,winreg.KEY_QUERY_VALUE,byref(key))==0:
 		try:
 			if windll.advapi32.RegQueryValueExW(key,u"Layout Display Name",0,None,buf,byref(bufSize))==0:
@@ -69,6 +69,8 @@ def getKeyboardLayoutDisplayName(klid):
 		finally:
 			windll.advapi32.RegCloseKey(key)
 
+# Returns KLID string same as GetKeyboardLayoutName, but for any HKL
+# Based on https://github.com/dotnet/winforms/issues/4345#issuecomment-759161693
 def getKLIDFromHKL(hkl):
 	deviceID = winUser.HIWORD(hkl)
 	if deviceID & 0xf000 != 0xf000: # deviceID not contains layoutID
@@ -93,11 +95,18 @@ def getKLIDFromHKL(hkl):
 		except (FileNotFoundError, ValueError, TypeError):
 			pass
 
+def _lookupKeyboardLanguageName(lcid, lctype):
+	buf = create_unicode_buffer(1024)
+	res = windll.kernel32.GetLocaleInfoW(lcid, lctype, buf, 1024)
+	# Translators: the label for an unknown language
+	return buf.value if res else _("unknown language")
+
+@functools.lru_cache(maxsize=None)
 def _lookupKeyboardLayoutName(hkl):
 	klid = getKLIDFromHKL(hkl)
 	if klid is None:
-		log.debugWarning("Could not find layout name for keyboard layout, reporting as unknown") 
-		# Translators: The label for an unknown input method when switching input methods. 
+		log.debugWarning("Could not find klid for hkl, reporting as unknown")
+		# Translators: The label for an unknown input method
 		return _("unknown input method")
 	inputMethodName = getKeyboardLayoutDisplayName(klid)
 	# Remove the language name if it is in the input method name.
@@ -140,13 +149,10 @@ def _nvdaControllerInternal_inputLangChangeNotify(threadID, hkl, layoutString):
 	if _inputSwitchingBarWillBeAnnounced.isSet():
 		_inputSwitchingBarWillBeAnnounced.clear()
 		return 0
-	buf = create_unicode_buffer(1024)
-	res = windll.kernel32.GetLocaleInfoW(languageID, config.conf["LangReporter"]["languagePresentation"], buf, 1024)
-	# Translators: the label for an unknown language when switching input methods.
-	inputLanguageName = buf.value if res else _("unknown language")
 	inputMethodName = _lookupKeyboardLayoutName(hkl)
 	# Include the language only if it changed.
 	if languageSwitching:
+		inputLanguageName = _lookupKeyboardLanguageName(languageID, config.conf["LangReporter"]["languagePresentation"])
 		if config.conf["LangReporter"]["reportLayout"]:
 			msg = _("{language} - {layout}").format(language=inputLanguageName, layout=inputMethodName)
 		else:
@@ -216,9 +222,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		script = lambda self, gesture: self._switchToLayout(hkl)
 		funcName = script.__name__ = f"script_switchLayoutTo_{hkl:08x}"
 		script.category = _("Keyboard layouts")
-		buf = create_unicode_buffer(1024)
-		res = windll.kernel32.GetLocaleInfoW(winUser.LOWORD(hkl), LOCALE_SLANGUAGE, buf, 1024)
-		inputLanguageName = buf.value if res else _("unknown language")
+		inputLanguageName = _lookupKeyboardLanguageName(winUser.LOWORD(hkl), LOCALE_SLANGUAGE)
 		inputMethodName = _lookupKeyboardLayoutName(hkl)
 		script.__doc__ = _("Switches to {language} - {layout} layout").format(language=inputLanguageName, layout=inputMethodName)
 		setattr(cls, funcName, script)
