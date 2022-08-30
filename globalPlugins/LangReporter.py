@@ -12,6 +12,7 @@ import globalPluginHandler
 import api
 import globalCommands
 import gui
+import tones
 import speech
 import config
 import globalVars
@@ -229,6 +230,11 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 
 	def _switchToLayout(self, hkl):
 		focus = api.getFocusObject()
+		current_hkl = c_ulong(windll.User32.GetKeyboardLayout(focus.windowThreadID)).value
+		if hkl == current_hkl:
+			# Requested layout is already active
+			tones.beep(100, 80)
+			return
 		winUser.sendMessage(focus.windowHandle, WM_INPUTLANGCHANGEREQUEST, INPUTLANGCHANGE_FORWARD, hkl)
 
 	def __init__(self):
