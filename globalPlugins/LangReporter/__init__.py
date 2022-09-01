@@ -2,6 +2,8 @@
 # Most of the code is taken from the NVDAHelper module and belongs to its authors
 
 import threading
+import os
+import winsound
 import itertools
 import functools
 import wx
@@ -12,7 +14,6 @@ import globalPluginHandler
 import api
 import globalCommands
 import gui
-import tones
 import speech
 import config
 import globalVars
@@ -30,6 +31,8 @@ from gui import SettingsPanel, NVDASettingsDialog, guiHelper
 
 addonHandler.initTranslation()
 
+MODULE_DIR = os.path.dirname(__file__)
+WARN_SND_PATH = os.path.join(MODULE_DIR, "warn.wav")
 WM_INPUTLANGCHANGEREQUEST = 0x0050
 INPUTLANGCHANGE_FORWARD = 0x0002
 
@@ -60,12 +63,12 @@ def getKeyboardLayoutDisplayName(klid):
 	buf = create_unicode_buffer(1024)
 	bufSize = c_int(2048)
 	key = wintypes.HKEY()
-	if windll.advapi32.RegOpenKeyExW(winreg.HKEY_LOCAL_MACHINE, rf"SYSTEM\CurrentControlSet\Control\Keyboard Layouts\{klid}", 0,winreg.KEY_QUERY_VALUE,byref(key))==0:
+	if windll.advapi32.RegOpenKeyExW(winreg.HKEY_LOCAL_MACHINE, rf"SYSTEM\CurrentControlSet\Control\Keyboard Layouts\{klid}", 0, winreg.KEY_QUERY_VALUE, byref(key)) == 0:
 		try:
-			if windll.advapi32.RegQueryValueExW(key,u"Layout Display Name",0,None,buf,byref(bufSize))==0:
-				windll.shlwapi.SHLoadIndirectString(buf.value,buf,1023,None)
+			if windll.advapi32.RegQueryValueExW(key, "Layout Display Name", 0, None, buf, byref(bufSize)) == 0:
+				windll.shlwapi.SHLoadIndirectString(buf.value, buf, 1023, None)
 				return buf.value
-			if windll.advapi32.RegQueryValueExW(key,u"Layout Text",0,None,buf,byref(bufSize))==0:
+			if windll.advapi32.RegQueryValueExW(key, "Layout Text", 0, None, buf, byref(bufSize)) == 0:
 				return buf.value
 		finally:
 			windll.advapi32.RegCloseKey(key)
@@ -233,7 +236,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		current_hkl = c_ulong(windll.User32.GetKeyboardLayout(focus.windowThreadID)).value
 		if hkl == current_hkl:
 			# Requested layout is already active
-			tones.beep(100, 80)
+			if os.path.isfile(WARN_SND_PATH):
+				winsound.PlaySound(WARN_SND_PATH, winsound.SND_ASYNC)
 			return
 		winUser.sendMessage(focus.windowHandle, WM_INPUTLANGCHANGEREQUEST, INPUTLANGCHANGE_FORWARD, hkl)
 
