@@ -33,6 +33,9 @@ addonHandler.initTranslation()
 
 MODULE_DIR = os.path.dirname(__file__)
 WARN_SND_PATH = os.path.join(MODULE_DIR, "warn.wav")
+
+# Message posted to the window with focus to change the current keyboard layout
+# https://docs.microsoft.com/en-us/windows/win32/winmsg/wm-inputlangchangerequest
 WM_INPUTLANGCHANGEREQUEST = 0x0050
 
 # Local information constants for obtaining of input language
@@ -44,7 +47,7 @@ LOCALE_SLOCALIZEDLANGUAGENAME = 0x0000006f
 LOCALE_SISO639LANGNAME = 0x00000059
 LOCALE_SISO639LANGNAME2 = 0x00000067
 
-LOCAL_CONSTANTS_DESCRIPTIONS = [
+LOCAL_CONSTANTS_LABELS = [
 	(LOCALE_SLANGUAGE, _("Full localized name of the language")),
 	(LOCALE_SABBREVLANGNAME, _("Abbreviated name of the language")),
 	(LOCALE_SNATIVELANGUAGENAME, _("Native name of the language")),
@@ -186,11 +189,11 @@ class AddonSettingsPanel(SettingsPanel):
 
 	def makeSettings(self, settingsSizer):
 		sHelper = guiHelper.BoxSizerHelper(self, sizer=settingsSizer)
-		presentationChoices = [f[1] for f in LOCAL_CONSTANTS_DESCRIPTIONS]
+		presentationChoices = [f[1] for f in LOCAL_CONSTANTS_LABELS]
 		self.languagePresentationChoice = sHelper.addLabeledControl(_("Input language &presentation:"), wx.Choice, choices=presentationChoices)
 		curPresentation = config.conf["LangReporter"]["languagePresentation"]
 		try:
-			index = [f[0] for f in LOCAL_CONSTANTS_DESCRIPTIONS].index(curPresentation)
+			index = [f[0] for f in LOCAL_CONSTANTS_LABELS].index(curPresentation)
 			self.languagePresentationChoice.SetSelection(index)
 		except Exception:
 			log.error(f"invalid language presentation: {curPresentation}")
@@ -205,7 +208,7 @@ class AddonSettingsPanel(SettingsPanel):
 		self.languagePresentationChoice.SetFocus()
 
 	def onSave(self):
-		config.conf["LangReporter"]["languagePresentation"] = LOCAL_CONSTANTS_DESCRIPTIONS[self.languagePresentationChoice.GetSelection()][0]
+		config.conf["LangReporter"]["languagePresentation"] = LOCAL_CONSTANTS_LABELS[self.languagePresentationChoice.GetSelection()][0]
 		config.conf["LangReporter"]["reportLayout"] = self.reportLayoutCheckBox.GetValue()
 		config.conf["LangReporter"]["reportLanguageSwitchingBar"] = self.reportLanguageSwitchingBarCheckBox.GetValue()
 
