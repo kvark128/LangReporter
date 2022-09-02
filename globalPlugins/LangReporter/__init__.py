@@ -34,7 +34,6 @@ addonHandler.initTranslation()
 MODULE_DIR = os.path.dirname(__file__)
 WARN_SND_PATH = os.path.join(MODULE_DIR, "warn.wav")
 WM_INPUTLANGCHANGEREQUEST = 0x0050
-INPUTLANGCHANGE_FORWARD = 0x0002
 
 # Local information constants for obtaining of input language
 # https://docs.microsoft.com/en-us/windows/win32/intl/locale-information-constants
@@ -239,7 +238,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			if os.path.isfile(WARN_SND_PATH):
 				winsound.PlaySound(WARN_SND_PATH, winsound.SND_ASYNC)
 			return
-		winUser.sendMessage(focus.windowHandle, WM_INPUTLANGCHANGEREQUEST, INPUTLANGCHANGE_FORWARD, hkl)
+		winUser.PostMessage(focus.windowHandle, WM_INPUTLANGCHANGEREQUEST, 0, hkl)
 
 	def __init__(self):
 		super().__init__()
