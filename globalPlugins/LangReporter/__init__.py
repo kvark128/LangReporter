@@ -18,6 +18,7 @@ import speech
 import config
 import globalVars
 import winUser
+import winVersion
 import addonHandler
 import ui
 import queueHandler
@@ -203,6 +204,8 @@ class AddonSettingsPanel(SettingsPanel):
 
 		self.reportLanguageSwitchingBarCheckBox = sHelper.addItem(wx.CheckBox(self, label=_("Report language &switching bar when pressing Windows+Space")))
 		self.reportLanguageSwitchingBarCheckBox.SetValue(config.conf["LangReporter"]["reportLanguageSwitchingBar"])
+		# Switching layouts via Windows+Space is available starting with Windows 8
+		self.reportLanguageSwitchingBarCheckBox.Enable(winVersion.getWinVer() >= winVersion.WIN8)
 
 	def postInit(self):
 		self.languagePresentationChoice.SetFocus()
