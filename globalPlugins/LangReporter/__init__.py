@@ -1,5 +1,4 @@
 # Copyright (C) 2020 - 2022 Alexander Linkov <kvark128@yandex.ru>
-# Most of the code is taken from the NVDAHelper module and belongs to its authors
 
 import threading
 import os
