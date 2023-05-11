@@ -1,0 +1,101 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: Dil Bilgilendirici\n"
+"Report-Msgid-Bugs-To: nvda-translations@groups.io\n"
+"POT-Creation-Date: 2023-05-12 04:17+0800\n"
+"PO-Revision-Date: 2023-05-12 04:21+0800\n"
+"Last-Translator: Kvark <kvark128@yandex.ru>\n"
+"Language-Team: Umut KORKMAZ <umutkork@gmail.com>\n"
+"Language: tr_TR\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n"
+"%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"X-Generator: Poedit 1.6.11\n"
+"X-Poedit-Basepath: .\n"
+"X-Poedit-SourceCharset: UTF-8\n"
+"X-Poedit-SearchPath-0: ../../../../LangReporter\n"
+
+#: addon\globalPlugins\LangReporter\__init__.py:54
+msgid "Full localized name of the language"
+msgstr "Dilin tam yerelleştirilmiş adı"
+
+#: addon\globalPlugins\LangReporter\__init__.py:55
+msgid "Abbreviated name of the language"
+msgstr "Dilin kısaltılmış adı"
+
+#: addon\globalPlugins\LangReporter\__init__.py:56
+msgid "Native name of the language"
+msgstr "Dilin yerel adı"
+
+#: addon\globalPlugins\LangReporter\__init__.py:57
+msgid "Localized name of the language"
+msgstr "Dilin yerelleştirilmiş adı"
+
+#: addon\globalPlugins\LangReporter\__init__.py:58
+msgid "Two-letter language name from ISO 639"
+msgstr "ISO 639'dan iki harfli dil adı"
+
+#: addon\globalPlugins\LangReporter\__init__.py:59
+msgid "Three-letter language name from ISO 639-2"
+msgstr "ISO 639-2'den üç harfli dil adı"
+
+#. Translators: the label for an unknown language
+#: addon\globalPlugins\LangReporter\__init__.py:111
+msgid "unknown language"
+msgstr "bilinmeyen dil"
+
+#. Translators: The label for an unknown input method
+#: addon\globalPlugins\LangReporter\__init__.py:119
+msgid "unknown input method"
+msgstr "bilinmeyen giriş yöntemi"
+
+#: addon\globalPlugins\LangReporter\__init__.py:166
+#, python-brace-format
+msgid "{language} - {layout}"
+msgstr "{language} - {layout}"
+
+#: addon\globalPlugins\LangReporter\__init__.py:191
+msgid "Input language and layout"
+msgstr "Giriş dili ve düzeni"
+
+#: addon\globalPlugins\LangReporter\__init__.py:196
+msgid "Input language &presentation:"
+msgstr "Giriş dili &duyurusu:"
+
+#: addon\globalPlugins\LangReporter\__init__.py:204
+msgid "Report &layout when language switching"
+msgstr "Di&l geçişi esnasında düzeni bildir"
+
+#: addon\globalPlugins\LangReporter\__init__.py:207
+msgid "Report language &switching bar when pressing Windows+Space"
+msgstr "Windows+Boşluk tuşlarına ba&sıldığında dil değiştirme çubuğunu bildir"
+
+#: addon\globalPlugins\LangReporter\__init__.py:235
+msgid "Keyboard layouts"
+msgstr "Klavye düzenleri"
+
+#: addon\globalPlugins\LangReporter\__init__.py:238
+#, python-brace-format
+msgid "Switches to {language} - {layout} layout"
+msgstr "{language} - {layout} düzenini deyiştirir"
+
+#: addon\globalPlugins\LangReporter\__init__.py:289
+msgid "Shows input language and layout presentation settings"
+msgstr "Giriş dilini ve düzen duyuru ayarlarını gösterir"
+
+#. Add-on summary, usually the user visible name of the addon.
+#. Translators: Summary for this add-on
+#. to be shown on installation and add-on information found in Add-ons Manager.
+#: buildVars.py:23
+msgid "LangReporter"
+msgstr "Dil Bilgilendirici"
+
+#. Add-on description
+#. Translators: Long description to be shown for this add-on on add-on information from add-ons manager
+#: buildVars.py:26
+msgid ""
+"Allows to configure how the change of input language and keyboard layout is "
+"reported"
+msgstr "Dil Bilgilendirici"
