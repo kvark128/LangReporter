@@ -30,7 +30,8 @@ from scriptHandler import script
 from NVDAObjects.UIA import UIA
 from NVDAObjects.window import Window
 from logHandler import log
-from gui import SettingsPanel, NVDASettingsDialog, guiHelper
+from gui import guiHelper
+from gui.settingsDialogs import SettingsPanel, NVDASettingsDialog
 
 addonHandler.initTranslation()
 
