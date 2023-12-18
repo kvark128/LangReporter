@@ -5,7 +5,6 @@
 
 import threading
 import os
-import winsound
 import itertools
 import functools
 import wx
@@ -23,6 +22,7 @@ import winUser
 import winVersion
 import addonHandler
 import ui
+import nvwave
 import queueHandler
 import NVDAHelper
 from speech import sayAll
@@ -33,10 +33,8 @@ from logHandler import log
 from gui import guiHelper
 from gui.settingsDialogs import SettingsPanel, NVDASettingsDialog
 
-addonHandler.initTranslation()
-
 MODULE_DIR = os.path.dirname(__file__)
-WARN_SND_PATH = os.path.join(MODULE_DIR, "warn.wav")
+addonHandler.initTranslation()
 
 # Message posted to the window with focus to change the current keyboard layout
 # https://docs.microsoft.com/en-us/windows/win32/winmsg/wm-inputlangchangerequest
@@ -244,8 +242,9 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		current_hkl = c_ulong(windll.User32.GetKeyboardLayout(focus.windowThreadID)).value
 		if hkl == current_hkl:
 			# Requested layout is already active
-			if os.path.isfile(WARN_SND_PATH):
-				winsound.PlaySound(WARN_SND_PATH, winsound.SND_ASYNC)
+			filepath = os.path.join(MODULE_DIR, "warn.wav")
+			if os.path.isfile(filepath):
+				nvwave.playWaveFile(filepath, asynchronous=True)
 			return
 		winUser.PostMessage(focus.windowHandle, WM_INPUTLANGCHANGEREQUEST, 0, hkl)
 
